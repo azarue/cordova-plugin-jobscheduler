@@ -1,10 +1,13 @@
 package me.errietta.cordova.plugin.jobscheduler;
 
 import android.app.Activity;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
 import android.content.ComponentName;
-import android.content.Intent;
+import android.content.Context;
 import android.content.ServiceConnection;
 import android.os.IBinder;
+import android.util.Log;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
@@ -12,39 +15,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.app.Activity;
-import android.app.job.JobInfo;
-import android.app.job.JobScheduler;
-import android.content.ComponentName;
-import android.content.Context;
-import android.content.Intent;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Message;
-import android.os.Messenger;
-import android.os.PersistableBundle;
-import android.support.annotation.ColorRes;
-import android.support.annotation.Nullable;
-import android.text.TextUtils;
-import android.util.Log;
-import android.view.View;
-import android.widget.CheckBox;
-import android.widget.EditText;
-import android.widget.RadioButton;
-import android.widget.TextView;
-import android.widget.Toast;
-
 import me.errietta.cordova.plugin.jobscheduler.MyJobService;
 
-import java.lang.ref.WeakReference;
-import java.util.List;
-
-
-
-
 //import de.appplant.cordova.plugin.background.ForegroundService.ForegroundBinder;
-
-import static android.content.Context.BIND_AUTO_CREATE;
 
 public class JobSchedulerPlugin extends CordovaPlugin {
     private ComponentName mServiceComponent;
