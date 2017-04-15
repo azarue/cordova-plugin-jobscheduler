@@ -1,0 +1,29 @@
+{
+  "name": "cordova-plugin-jobscheduler",
+  "version": "0.0.1",
+  "description": "Schedule tasks.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/errietta/cordova-plugin-jobscheduler.git"
+  },
+  "keywords": [
+    "jobscheduler",
+    "cordova",
+    "ecosystem:cordova"
+  ],
+  "platforms": [
+    "android"
+  ],
+  "engines": [
+    {
+      "name": "cordova",
+      "version": ">=6.0.0"
+    }
+  ],
+  "author": "Errietta Kostala",
+  "license": "Apache 2.0",
+  "bugs": {
+    "url": "https://github.com/errietta/cordova-plugin-jobscheduler/issues"
+  },
+  "homepage": "https://github.com/errietta/cordova-plugin-jobscheduler#readme"
+}

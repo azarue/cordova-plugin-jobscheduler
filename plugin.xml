@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<plugin xmlns="http://apache.org/cordova/ns/plugins/1.0"
+        xmlns:android="http://schemas.android.com/apk/res/android"
+        id="cordova-plugin-jobscheduler"
+        version="0.0.1">
+
+    <name>JobScheduler</name>
+
+    <description>Allows Scheduling tasks.</description>
+
+    <repo>https://github.com/errietta/cordova-plugin-jobscheduler.git</repo>
+
+    <keywords>jobscheduler</keywords>
+
+    <license>Apache 2.0</license>
+
+    <author>Errietta Kostala</author>
+
+    <!-- dependencies -->
+    <dependency id="cordova-plugin-device" />
+
+    <!-- cordova -->
+    <engines>
+        <engine name="cordova" version=">=3.0.0" />
+        <engine name="android-sdk" version=">=16" />
+    </engines>
+
+    <!-- js -->
+    <js-module src="www/jobscheduler.js" name="JobScheduler">
+        <clobbers target="cordova.plugins.jobScheduler" />
+        <clobbers target="plugin.jobScheduler" />
+    </js-module>
+
+    <!-- android -->
+    <platform name="android">
+        <config-file target="res/xml/config.xml" parent="/*">
+            <feature name="JobScheduler" >
+                <param name="android-package"
+                      value="me.errietta.cordova.plugin.jobscheduler.JobSchedulerPlugin"/>
+            </feature>
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <service android:name="me.errietta.cordova.plugin.jobscheduler.MyJobService" android:permission="android.permission.BIND_JOB_SERVICE" />
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/*">
+            <uses-permission android:name="android.permission.BIND_JOB_SERVICE" />
+        </config-file>
+
+        <!--
+        <config-file target="res/xml/config.xml" parent="/*">
+            <preference name="KeepRunning" value="true" />
+            <preference name="AndroidLaunchMode" value="singleInstance"/>
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <service android:name="de.appplant.cordova.plugin.background.ForegroundService" />
+        </config-file>
+
+        <config-file target="AndroidManifest.xml" parent="/manifest">
+            <uses-permission android:name="android.permission.WAKE_LOCK" />
+        </config-file>
+        !-->
+
+        <source-file
+            src="src/android/JobSchedulerPlugin.java"
+            target-dir="src/me/errietta/cordova/plugin/jobscheduler" />
+
+        <source-file
+            src="src/android/MyJobService.java"
+            target-dir="src/me/errietta/cordova/plugin/jobscheduler" />
+
+        <!--
+        <source-file
+            src="src/android/ForegroundService.java"
+            target-dir="src/de/appplant/cordova/plugin/background" />
+            !-->
+    </platform>
+
+    <!-- browser -->
+    <platform name="browser">
+        <config-file target="config.xml" parent="/*">
+            <feature name="JobScheduler">
+                <param name="browser-package" value="JobScheduler"/>
+            </feature>
+        </config-file>
+
+        <js-module src="src/browser/JobSchedulerProxy.js" name="JobScheduler.Proxy">
+            <runs />
+        </js-module>
+    </platform>
+
+</plugin>
