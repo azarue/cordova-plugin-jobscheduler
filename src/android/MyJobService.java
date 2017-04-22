@@ -4,10 +4,16 @@ import android.app.job.JobParameters;
 import android.app.job.JobService;
 import android.content.Intent;
 import android.os.Handler;
+import android.os.Message;
 import android.os.Messenger;
+import android.os.PersistableBundle;
+import android.os.RemoteException;
+import android.support.annotation.Nullable;
 import android.util.Log;
 
-
+import static me.errietta.cordova.plugin.jobscheduler.JobSchedulerPlugin.JOB_ID_KEY;
+import static me.errietta.cordova.plugin.jobscheduler.JobSchedulerPlugin.MESSENGER_INTENT_KEY;
+import static me.errietta.cordova.plugin.jobscheduler.JobSchedulerPlugin.SCHEDULED_JOB_START;
 
 /**
  * Service to handle callbacks from the JobScheduler. Requests scheduled with the JobScheduler
@@ -16,9 +22,10 @@ import android.util.Log;
  */
 public class MyJobService extends JobService {
 
-    private static final String TAG = MyJobService.class.getSimpleName();
+    private static final String TAG = "JobSchedulerPlugin";
 
     private Messenger mActivityMessenger;
+    private int jobid;
 
     @Override
     public void onCreate() {
@@ -38,7 +45,7 @@ public class MyJobService extends JobService {
      */
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        //mActivityMessenger = intent.getParcelableExtra(MESSENGER_INTENT_KEY);
+        mActivityMessenger = intent.getParcelableExtra(MESSENGER_INTENT_KEY);
 
         Log.i(TAG, "onStartCommand");
 
@@ -47,15 +54,25 @@ public class MyJobService extends JobService {
 
     @Override
     public boolean onStartJob(final JobParameters params) {
-         // Uses a handler to delay the execution of jobFinished().
+        PersistableBundle extras = params.getExtras();
+
+        if (!extras.containsKey(JOB_ID_KEY)) {
+            Log.e(TAG, "jobid is null in getExtras");
+            jobid = 0;
+        } else {
+            jobid = extras.getInt(JOB_ID_KEY);
+        }
+
         Handler handler = new Handler();
-        handler.postDelayed(new Runnable() {
+
+        handler.post(new Runnable() {
             @Override
             public void run() {
+                Log.i(TAG, "on start job: " + jobid);
+                sendMessage(SCHEDULED_JOB_START, jobid);
                 jobFinished(params, false);
             }
-        }, 1000);
-        Log.i(TAG, "on start job: " + params.getJobId());
+        });
 
         // Return true as there's more work to be done with this job.
         return true;
@@ -63,11 +80,35 @@ public class MyJobService extends JobService {
 
     @Override
     public boolean onStopJob(JobParameters params) {
-        Log.i(TAG, "on stop job: " + params.getJobId());
+        PersistableBundle extras = params.getExtras();
+
+        if (!extras.containsKey(JOB_ID_KEY)) {
+            Log.e(TAG, "jobid is null in stop");
+            jobid = 0;
+        } else {
+            jobid = extras.getInt(JOB_ID_KEY);
+        }
+
+        Log.i(TAG, "on stop job: " + jobid);
 
         // Return false to drop the job.
         return false;
     }
 
-
+    private void sendMessage(int messageID, int jobid) {
+        // If this service is launched by the JobScheduler, there's no callback Messenger. It
+        // only exists when the MainActivity calls startService() with the callback in the Intent.
+        if (mActivityMessenger == null) {
+            Log.d(TAG, "Service is bound, not started. There's no callback to send a message to.");
+            return;
+        }
+        Message m = Message.obtain();
+        m.what = messageID;
+        m.arg1 = jobid;
+        try {
+            mActivityMessenger.send(m);
+        } catch (RemoteException e) {
+            Log.e(TAG, "Error passing service object back to activity.");
+        }
+    }
 }

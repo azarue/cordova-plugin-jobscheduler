@@ -5,15 +5,24 @@ import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
 import android.content.ServiceConnection;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Message;
+import android.os.Messenger;
+import android.os.PersistableBundle;
 import android.util.Log;
+import android.webkit.WebView;
 
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
+import org.apache.cordova.CordovaWebView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+
+import java.lang.ref.WeakReference;
 
 import me.errietta.cordova.plugin.jobscheduler.MyJobService;
 
@@ -21,9 +30,16 @@ import me.errietta.cordova.plugin.jobscheduler.MyJobService;
 
 public class JobSchedulerPlugin extends CordovaPlugin {
     private ComponentName mServiceComponent;
-    private int mJobId = 0;
 
-    private static final String TAG = JobSchedulerPlugin.class.getSimpleName();
+    private IncomingMessageHandler mHandler;
+
+    public static final String MESSENGER_INTENT_KEY
+            = "cordova-plugin-jobscheduler.MESSENGER_INTENT_KEY";
+    public static final String JOB_ID_KEY
+            = "cordova-plugin-jobscheduler.JOB_ID_KEY";
+
+    private static final String TAG = "JobSchedulerPlugin";
+    public static final int SCHEDULED_JOB_START = 0;
 
     // Event types for callbacks
     private enum Event {
@@ -37,10 +53,12 @@ public class JobSchedulerPlugin extends CordovaPlugin {
     // Default settings for the notification
     private static JSONObject defaultSettings = new JSONObject();
 
+
     // Used to (un)bind the service to with the activity
     private final ServiceConnection connection = new ServiceConnection() {
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected");
         }
 
         @Override
@@ -51,7 +69,15 @@ public class JobSchedulerPlugin extends CordovaPlugin {
 
     @Override
     protected void pluginInitialize() {
-    //    BackgroundExt.addWindowFlags(cordova.getActivity());
+        Log.d(TAG, "pluginInitialize");
+
+        Context ctx = cordova.getActivity().getApplicationContext();
+
+        mHandler = new IncomingMessageHandler(cordova.getActivity(), webView);
+        Intent startServiceIntent = new Intent(ctx, MyJobService.class);
+        Messenger messengerIncoming = new Messenger(mHandler);
+        startServiceIntent.putExtra(MESSENGER_INTENT_KEY, messengerIncoming);
+        ctx.startService(startServiceIntent);
     }
 
     // codebeat:disable[ABC]
@@ -86,6 +112,7 @@ public class JobSchedulerPlugin extends CordovaPlugin {
         JobInfo.Builder builder;
 
         Activity act = cordova.getActivity();
+        int jobid;
 
         try {
              mServiceComponent = new ComponentName(act, MyJobService.class);
@@ -95,7 +122,8 @@ public class JobSchedulerPlugin extends CordovaPlugin {
         }
 
         try {
-            builder = new JobInfo.Builder(mJobId++, mServiceComponent);
+            jobid = params.getInt("jobId");
+            builder = new JobInfo.Builder(jobid, mServiceComponent);
         } catch (Exception e) {
             Log.e(TAG, "Error creating builder", e);
             return;
@@ -126,17 +154,10 @@ public class JobSchedulerPlugin extends CordovaPlugin {
                 builder.setRequiresCharging(true);
             }
 
-            /*
-            // Extras, work duration.
             PersistableBundle extras = new PersistableBundle();
-            String workDuration = mDurationTimeEditText.getText().toString();
-            if (TextUtils.isEmpty(workDuration)) {
-                workDuration = "1";
-            }
-            extras.putLong(WORK_DURATION_KEY, Long.valueOf(workDuration) * 1000);
+            extras.putInt (JOB_ID_KEY, jobid);
 
             builder.setExtras(extras);
-            */
         } catch (Exception e) {
             Log.e(TAG, "Error setting params", e);
             return;
@@ -211,4 +232,48 @@ public class JobSchedulerPlugin extends CordovaPlugin {
         });
     }
 
+    /**
+     * A {@link Handler} allows you to send messages associated with a thread. A {@link Messenger}
+     * uses this handler to communicate from {@link MyJobService}. It's also used to make
+     * the start and stop views blink for a short period of time.
+     */
+    private static class IncomingMessageHandler extends Handler {
+        // Prevent possible leaks with a weak reference.
+        private WeakReference<Activity> mActivity;
+        private WeakReference<CordovaWebView> webview;
+
+        IncomingMessageHandler(Activity activity, CordovaWebView wv) {
+            super();
+            this.mActivity = new WeakReference<Activity>(activity);
+            this.webview = new WeakReference<CordovaWebView>(wv);
+        }
+
+        @Override
+        public void handleMessage(Message msg) {
+            Activity mainActivity = mActivity.get();
+            if (mainActivity == null) {
+                // Activity is no longer available, exit.
+                return;
+            }
+
+            final int jobid = msg.arg1;
+            final CordovaWebView wv = this.webview.get();
+
+            switch (msg.what) {
+                case SCHEDULED_JOB_START:
+                    Handler handler = new Handler(mainActivity.getApplicationContext().getMainLooper());
+
+                    handler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.i(TAG, "inside the main thingy: " + jobid);
+                            wv.loadUrl("javascript:cordova.plugins.jobScheduler.onrun(" + jobid + ");");
+                        }
+                    });
+
+                    Log.d(TAG, "Got start from service!");
+                    break;
+            }
+        }
+    }
 }
