@@ -15,6 +15,7 @@ import android.os.PersistableBundle;
 import android.util.Log;
 import android.webkit.WebView;
 
+
 import org.apache.cordova.CallbackContext;
 import org.apache.cordova.CordovaPlugin;
 import org.apache.cordova.CordovaWebView;
@@ -99,8 +100,12 @@ public class JobSchedulerPlugin extends CordovaPlugin {
                             CallbackContext callback) throws JSONException {
 
         if (action.equalsIgnoreCase("schedule")) {
-            schedule (args.getJSONObject(0));
-            callback.success();
+            String error = schedule(args.getJSONObject(0));
+            if (error == null){
+                callback.success();
+            } else {
+                callback.error(error);
+            }
             return true;
         }
 
@@ -108,7 +113,7 @@ public class JobSchedulerPlugin extends CordovaPlugin {
         return false;
     }
 
-    private void schedule (JSONObject params) {
+    private String schedule (JSONObject params) {
         JobInfo.Builder builder;
 
         Activity act = cordova.getActivity();
@@ -118,7 +123,7 @@ public class JobSchedulerPlugin extends CordovaPlugin {
              mServiceComponent = new ComponentName(act, MyJobService.class);
         } catch (Exception e) {
             Log.e(TAG, "Can't get ComponentName", e);
-            return;
+            return  "Can't get ComponentName";
         }
 
         try {
@@ -126,11 +131,11 @@ public class JobSchedulerPlugin extends CordovaPlugin {
             builder = new JobInfo.Builder(jobid, mServiceComponent);
         } catch (Exception e) {
             Log.e(TAG, "Error creating builder", e);
-            return;
+            return "Error creating builder";
         }
         try {
             // logic from https://josiassena.com/the-jobscheduler-on-android/
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N ) {
+            if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.N ) {
 
                 builder.setMinimumLatency(params.getLong("interval") * 1000);
 
@@ -168,7 +173,7 @@ public class JobSchedulerPlugin extends CordovaPlugin {
             builder.setExtras(extras);
         } catch (Exception e) {
             Log.e(TAG, "Error setting params", e);
-            return;
+            return "Error setting params";
         }
 
         try {
@@ -177,9 +182,11 @@ public class JobSchedulerPlugin extends CordovaPlugin {
 
             JobScheduler tm = (JobScheduler) act.getSystemService(Context.JOB_SCHEDULER_SERVICE);
 
-            return tm.schedule(builder.build());
+            tm.schedule(builder.build());
+            return null;
         } catch (Exception e) {
             Log.e(TAG, "Error scheduling!", e);
+            return "Error scheduling!";
         }
     }
 
