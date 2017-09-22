@@ -135,19 +135,19 @@ public class JobSchedulerPlugin extends CordovaPlugin {
         }
         try {
             // logic from https://josiassena.com/the-jobscheduler-on-android/
-            if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.N ) {
+            //if (android.os.Build.VERSION.SDK_INT <= android.os.Build.VERSION_CODES.N ) {
 
                 builder.setMinimumLatency(params.getLong("interval") * 1000);
 
                 if (params.has("overrideDeadline")) {
                     builder.setOverrideDeadline(params.getLong("overrideDeadline") * 1000);
                 }
-            } else {
-                // periodic and (minimumLatency or overrideDeadline) throws an exception
-                // see https://developer.android.com/reference/android/app/job/JobInfo.Builder.html#setPeriodic(long)
-                builder.setPeriodic(params.getLong("interval") * 1000);
-            }
-            builder.setPersisted(true);
+//            } else {
+//                // periodic and (minimumLatency or overrideDeadline) throws an exception
+//                // see https://developer.android.com/reference/android/app/job/JobInfo.Builder.html#setPeriodic(long)
+//                builder.setPeriodic(params.getLong("interval") * 1000);
+//            }
+            //builder.setPersisted(true);
 
 
             if (params.has("requiredNetworkType")) {
