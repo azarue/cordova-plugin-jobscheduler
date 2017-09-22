@@ -1,23 +1,32 @@
 var exec    = require('cordova/exec'),
     channel = require('cordova/channel');
 
-exports._jobid = 0;
-exports._callbacks = {};
+var callbacks = {};
 
 exports.onrun = function(jobid) {
     var cb;
 
-    if (cb = this._callbacks[jobid]) {
+    if (cb = callbacks[jobid]) {
         cb();
     }
 };
 
-exports.schedule = function(args) {
+exports.schedule = function(args, successCallback, errorCallback) {
     var callback = args.callback;
-    delete args.callback;
 
-    this._callbacks[this._jobid] = callback;
+    if (typeof callback !== 'function'){
+      errorCallback(new Error("missing callback parameter"))
+    }
 
-    args.jobId = this._jobid++;
-    cordova.exec(function() { console.log('schedule called'); }, null, 'JobScheduler', 'schedule', [args]);
+    // get new random number
+    const maxId = 100000 - 1;
+    var id = Math.floor(Math.random() * maxId) + 1;
+    while (callbacks[id]){
+      id = Math.floor(Math.random() * maxId) + 1;
+    }
+
+    callbacks[id] = callback;
+
+    args.jobId = id;
+    cordova.exec(successCallback, errorCallback, 'JobScheduler', 'schedule', [args]);
 };
