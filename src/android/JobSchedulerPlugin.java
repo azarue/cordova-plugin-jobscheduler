@@ -129,13 +129,21 @@ public class JobSchedulerPlugin extends CordovaPlugin {
             return;
         }
         try {
-            if (params.has("minimumLatency")) {
-                builder.setMinimumLatency(params.getLong("minimumLatency") * 1000);
-            }
+            // logic from https://josiassena.com/the-jobscheduler-on-android/
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N ) {
 
-            if (params.has("overrideDeadline")) {
-                builder.setOverrideDeadline(params.getLong("overrideDeadline") * 1000);
+                builder.setMinimumLatency(params.getLong("interval") * 1000);
+
+                if (params.has("overrideDeadline")) {
+                    builder.setOverrideDeadline(params.getLong("overrideDeadline") * 1000);
+                }
+            } else {
+                // periodic and (minimumLatency or overrideDeadline) throws an exception
+                // see https://developer.android.com/reference/android/app/job/JobInfo.Builder.html#setPeriodic(long)
+                builder.setPeriodic(params.getLong("interval") * 1000);
             }
+            builder.setPersisted(true);
+
 
             if (params.has("requiredNetworkType")) {
                 String connectivity = params.getString("requiredNetworkType");
@@ -148,10 +156,10 @@ public class JobSchedulerPlugin extends CordovaPlugin {
             }
 
             if (params.has("requiresDeviceIdle") && params.getBoolean("requiresDeviceIdle")) {
-                builder.setRequiresDeviceIdle(true);
+                builder.setRequiresDeviceIdle(params.getBoolean("requiresDeviceIdle"));
             }
             if (params.has("requiresCharging") && params.getBoolean("requiresCharging")) {
-                builder.setRequiresCharging(true);
+                builder.setRequiresCharging(params.getBoolean("requiresCharging"));
             }
 
             PersistableBundle extras = new PersistableBundle();
@@ -169,7 +177,7 @@ public class JobSchedulerPlugin extends CordovaPlugin {
 
             JobScheduler tm = (JobScheduler) act.getSystemService(Context.JOB_SCHEDULER_SERVICE);
 
-            tm.schedule(builder.build());
+            return tm.schedule(builder.build());
         } catch (Exception e) {
             Log.e(TAG, "Error scheduling!", e);
         }
